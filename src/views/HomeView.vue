@@ -6,18 +6,17 @@
         {{ cat }}
       </button>
     </div>
-    <div v-if="articles.length" class="grid">
+    <div v-if="loading">Loading...</div>
+    <div v-else-if="error" class="error-message">{{ error }}</div>
+    <div v-else-if="articles.length" class="grid">
       <ArticleCard
         v-for="article in articles"
         :key="article.url"
         :article="article"
       />
     </div>
-    <div v-else>
-      <p>Loading or no articles found.</p>
-    </div>
     <PageNavigator
-      v-if="articles.length"
+      v-if="articles.length && !loading"
       :currentPage="currentPage"
       :hasMore="hasMore"
       @change-page="changePage"
@@ -35,6 +34,8 @@ export default {
   data() {
     return {
       articles: [],
+      error: null,
+      loading: false,
       categories: ["general", "technology", "sports", "business"],
       selectedCategory: "general",
       currentPage: 1,
@@ -56,6 +57,8 @@ export default {
       this.fetchArticles();
     },
     async fetchArticles() {
+      this.error = null;
+      this.loading = true;
       try {
         const res = await getTopHeadlines(
           this.selectedCategory,
@@ -64,7 +67,11 @@ export default {
         this.articles = res.data.articles;
         this.hasMore = res.data.articles.length === 10;
       } catch (err) {
+        this.error = "Failed to fetch articles. Please try again later.";
+        this.articles = [];
         console.error(err);
+      } finally {
+        this.loading = false;
       }
     },
   },

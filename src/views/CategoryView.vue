@@ -1,7 +1,9 @@
 <template>
   <div>
     <h1>Category: {{ category }}</h1>
-    <div class="grid">
+    <div v-if="loading">Loading...</div>
+    <div v-else-if="error" class="error-message">{{ error }}</div>
+    <div v-else-if="articles.length" class="grid">
       <ArticleCard
         v-for="article in articles"
         :key="article.url"
@@ -9,7 +11,7 @@
       />
     </div>
     <PageNavigator
-      v-if="articles.length"
+      v-if="articles.length && !loading"
       :currentPage="currentPage"
       :hasMore="hasMore"
       @change-page="changePage"
@@ -30,6 +32,8 @@ export default {
       category: this.$route.params.category,
       currentPage: 1,
       hasMore: false,
+      error: null,
+      loading: false,
     };
   },
   watch: {
@@ -49,12 +53,18 @@ export default {
       this.fetchArticles();
     },
     async fetchArticles() {
+      this.error = null;
+      this.loading = true;
       try {
         const res = await getTopHeadlines(this.category, this.currentPage);
         this.articles = res.data.articles;
         this.hasMore = res.data.articles.length === 10;
       } catch (err) {
+        this.error = "Failed to fetch articles. Please try again later.";
+        this.articles = [];
         console.error(err);
+      } finally {
+        this.loading = false;
       }
     },
   },
